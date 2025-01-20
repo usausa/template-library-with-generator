@@ -1,1 +1,1 @@
-# template-source-generator
+# template-library-with-generator
