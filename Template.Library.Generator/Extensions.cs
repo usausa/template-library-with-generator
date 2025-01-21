@@ -2,7 +2,7 @@ namespace Template.Library.Generator;
 
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-public static class Extensions
+internal static class Extensions
 {
     public static string GetNamespace(this BaseTypeDeclarationSyntax syntax)
     {
