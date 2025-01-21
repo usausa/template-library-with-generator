@@ -32,7 +32,7 @@
   <Import Project="..\Template.Library.Generator\build\Template.Library.props" />
 
   <ItemGroup>
-    <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" />
+    <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" OutputItemType="analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Template.Library\Template.Library.csproj" />
   </ItemGroup>
 
