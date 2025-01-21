@@ -16,7 +16,8 @@
     <TemplateLibraryGeneratorValue>test</TemplateLibraryGeneratorValue>
   </PropertyGroup>
 
-  <Import Project="..\Template.Library.Generator\build\Template.Library.Generator.props" />
+  <Import Project="..\Template.Library.Generator\build\Template.Library.props" />
+
   <ItemGroup>
     <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" OutputItemType="analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\Template.Library\Template.Library.csproj" />
