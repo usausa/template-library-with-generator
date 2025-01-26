@@ -19,6 +19,8 @@
     <TemplateLibraryGeneratorValue>test</TemplateLibraryGeneratorValue>
   </PropertyGroup>
 
+  <Import Project="..\Template.Library.props" />
+
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.4">
       <PrivateAssets>all</PrivateAssets>
@@ -28,8 +30,6 @@
     <PackageReference Include="xunit.v3" Version="1.0.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.0.1" />
   </ItemGroup>
-
-  <Import Project="..\Template.Library.Generator\build\Template.Library.props" />
 
   <ItemGroup>
     <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" OutputItemType="analyzer" ReferenceOutputAssembly="false" />
