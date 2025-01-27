@@ -1,16 +1,17 @@
 namespace Develop;
 
-using Template.Library.Attributes;
+using Template.Library;
 
 internal static class Program
 {
     public static void Main()
     {
-        _ = new Target();
+        Target.Method();
     }
 }
 
-[Custom]
-internal sealed class Target
+internal static partial class Target
 {
+    [CustomMethod]
+    public static partial void Method();
 }
