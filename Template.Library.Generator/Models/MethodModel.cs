@@ -1,7 +1,5 @@
 namespace Template.Library.Generator.Models;
 
-using Template.Library.Generator.Helpers;
-
 using Microsoft.CodeAnalysis;
 
 internal sealed record MethodModel(

@@ -4,13 +4,14 @@ using System;
 using System.Collections.Immutable;
 using System.Text;
 
-using Template.Library.Generator.Helpers;
 using Template.Library.Generator.Models;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
+
+using SourceGenerateHelper;
 
 [Generator]
 public sealed class TemplateGenerator : IIncrementalGenerator
@@ -90,13 +91,13 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
     private static void Execute(SourceProductionContext context, OptionModel option, ImmutableArray<Result<MethodModel>> methods)
     {
-        foreach (var info in methods.SelectPart(static x => x.Error))
+        foreach (var info in methods.SelectError())
         {
             context.ReportDiagnostic(info);
         }
 
         var builder = new SourceBuilder();
-        foreach (var group in methods.SelectPart(static x => x.Value).GroupBy(static x => new { x.Namespace, x.ClassName }))
+        foreach (var group in methods.SelectValue().GroupBy(static x => new { x.Namespace, x.ClassName }))
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
