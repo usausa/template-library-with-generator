@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="Analyzers.ruleset" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Build.targets" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="Template.Library.props" />
+    <File Path="Template.Library.sln.DotSettings" />
+    <File Path="test.runsettings" />
+  </Folder>
+  <Project Path="Develop/Develop.csproj" />
+  <Project Path="Template.Library/Template.Library.csproj" />
+  <Project Path="Template.Library.Generator/Template.Library.Generator.csproj" />
+  <Project Path="Template.Library.Tests/Template.Library.Tests.csproj" />
+</Solution>
