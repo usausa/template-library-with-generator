@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -12,11 +12,11 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
+  <Import Project="..\Template.Library.props" />
+
   <PropertyGroup>
     <TemplateLibraryGeneratorValue>test</TemplateLibraryGeneratorValue>
   </PropertyGroup>
-
-  <Import Project="..\Template.Library.props" />
 
   <ItemGroup>
     <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" OutputItemType="analyzer" ReferenceOutputAssembly="false" />
