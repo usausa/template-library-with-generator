@@ -13,7 +13,9 @@
     <File Path="test.runsettings" />
   </Folder>
   <Project Path="Develop/Develop.csproj" />
-  <Project Path="Template.Library/Template.Library.csproj" />
+  <Project Path="Template.Library/Template.Library.csproj">
+    <BuildDependency Project="Template.Library.Generator/Template.Library.Generator.csproj" />
+  </Project>
   <Project Path="Template.Library.Generator/Template.Library.Generator.csproj" />
   <Project Path="Template.Library.Tests/Template.Library.Tests.csproj" />
 </Solution>
