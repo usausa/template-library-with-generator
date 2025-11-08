@@ -12,7 +12,7 @@
     <File Path="Template.Library.props" />
     <File Path="Template.Library.sln.DotSettings" />
   </Folder>
-  <Project Path="Develop/Develop.csproj" />
+  <Project Path="Develop/Develop.csproj" DefaultStartup="true" />
   <Project Path="Template.Library/Template.Library.csproj">
     <BuildDependency Project="Template.Library.Generator/Template.Library.Generator.csproj" />
   </Project>
