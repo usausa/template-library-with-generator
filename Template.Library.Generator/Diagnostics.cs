@@ -15,7 +15,7 @@ internal static class Diagnostics
     public static DiagnosticDescriptor InvalidMethodParameter => new(
         id: "TP0002",
         title: "Invalid method parameter",
-        messageFormat: "Parameter type must be IServiceCollection. method=[{0}]",
+        messageFormat: "Method must not have parameters. method=[{0}]",
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
