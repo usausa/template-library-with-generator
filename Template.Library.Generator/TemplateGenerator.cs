@@ -4,14 +4,14 @@ using System;
 using System.Collections.Immutable;
 using System.Text;
 
-using Template.Library.Generator.Models;
-
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
 using SourceGenerateHelper;
+
+using Template.Library.Generator.Models;
 
 [Generator]
 public sealed class TemplateGenerator : IIncrementalGenerator
