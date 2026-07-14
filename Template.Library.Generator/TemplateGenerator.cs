@@ -57,7 +57,7 @@ public sealed class TemplateGenerator : IIncrementalGenerator
         var syntax = (MethodDeclarationSyntax)context.TargetNode;
         if (context.SemanticModel.GetDeclaredSymbol(syntax) is not IMethodSymbol symbol)
         {
-            return Results.Error<MethodModel>(null);
+            return Results.Errors<MethodModel>();
         }
 
         // Validate method definition
