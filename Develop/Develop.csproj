@@ -12,11 +12,11 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
-  <Import Project="..\Template.Library.props" />
-
   <PropertyGroup>
     <TemplateLibraryGeneratorValue>test</TemplateLibraryGeneratorValue>
   </PropertyGroup>
+
+  <Import Project="..\Template.Library.targets" />
 
   <ItemGroup>
     <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" OutputItemType="analyzer" ReferenceOutputAssembly="false" />

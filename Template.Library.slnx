@@ -11,8 +11,8 @@
     <File Path="Directory.Build.targets" />
     <File Path="LICENSE" />
     <File Path="README.md" />
-    <File Path="Template.Library.props" />
     <File Path="Template.Library.sln.DotSettings" />
+    <File Path="Template.Library.targets" />
   </Folder>
   <Project Path="Develop/Develop.csproj" DefaultStartup="true" />
   <Project Path="Template.Library/Template.Library.csproj">

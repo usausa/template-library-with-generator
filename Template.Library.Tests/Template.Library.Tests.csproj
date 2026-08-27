@@ -21,7 +21,7 @@
     <TemplateLibraryGeneratorValue>test</TemplateLibraryGeneratorValue>
   </PropertyGroup>
 
-  <Import Project="..\Template.Library.props" />
+  <Import Project="..\Template.Library.targets" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
