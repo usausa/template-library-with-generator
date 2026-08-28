@@ -25,12 +25,14 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="SourceGenerateHelper.Testing" Version="1.24.0" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.10.0" />
     <PackageReference Include="xunit.v3.mtp-v2" Version="3.2.2" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" OutputItemType="analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\Template.Library.Generator\Template.Library.Generator.csproj" ReferenceOutputAssembly="true" />
     <ProjectReference Include="..\Template.Library\Template.Library.csproj" />
   </ItemGroup>
 
