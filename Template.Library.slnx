@@ -7,11 +7,13 @@
     <File Path="Analyzers.ruleset" />
     <File Path="CLAUDE.md" />
     <File Path="CodeCoverage.runsettings" />
+    <File Path="Diagnostics.md" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Build.targets" />
     <File Path="LICENSE" />
     <File Path="README.md" />
     <File Path="Template.Library.sln.DotSettings" />
+    <File Path="Template.Library.props" />
     <File Path="Template.Library.targets" />
   </Folder>
   <Project Path="Develop/Develop.csproj" DefaultStartup="true" />
