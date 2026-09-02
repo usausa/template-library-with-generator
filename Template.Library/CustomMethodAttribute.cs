@@ -3,6 +3,4 @@ namespace Template.Library;
 using System;
 
 [AttributeUsage(AttributeTargets.Method)]
-public sealed class CustomMethodAttribute : Attribute
-{
-}
+public sealed class CustomMethodAttribute : Attribute;
