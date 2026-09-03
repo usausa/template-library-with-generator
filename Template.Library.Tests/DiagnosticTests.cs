@@ -1,6 +1,6 @@
 namespace Template.Library;
 
-public sealed class DiagnosticTest
+public sealed class DiagnosticTests
 {
     // ------------------------------------------------------------
     // Method definition

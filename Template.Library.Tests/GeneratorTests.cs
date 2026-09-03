@@ -1,6 +1,6 @@
 namespace Template.Library;
 
-public sealed class GeneratorTest
+public sealed class GeneratorTests
 {
     private const string Source =
         """
