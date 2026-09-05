@@ -102,7 +102,9 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             context.CancellationToken.ThrowIfCancellationRequested();
 
             builder.Clear();
+#pragma warning disable IDE0028
             BuildSource(builder, option, group.ToList());
+#pragma warning restore IDE0028
 
             var filename = MakeFilename(group.Key.Namespace, group.Key.ClassName);
             var source = builder.ToString();
