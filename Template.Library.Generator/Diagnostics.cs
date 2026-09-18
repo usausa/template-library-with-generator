@@ -19,4 +19,12 @@ internal static class Diagnostics
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    public static DiagnosticDescriptor InvalidMethodReturnType { get; } = new(
+        id: "TP0003",
+        title: "Invalid method return type",
+        messageFormat: "[CustomMethod] method must return void. method=[{0}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

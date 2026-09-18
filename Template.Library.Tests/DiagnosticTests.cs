@@ -55,6 +55,30 @@ public sealed class DiagnosticTests
     }
 
     [Fact]
+    public void Tp0003NonVoidMethodEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                public static partial int Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0003");
+    }
+
+    [Fact]
     public void ValidDefinitionEmitsNoDiagnostic()
     {
         // Arrange

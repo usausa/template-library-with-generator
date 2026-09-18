@@ -62,4 +62,15 @@ public sealed class PipelineCacheTests
         // Assert
         Assert.Contains(result.OutputReasons, static x => x.IsChanged());
     }
+
+    // 型単位の出力なので、別の型を足しても既存の型の出力は再生成されない
+    [Fact]
+    public void AddedTargetKeepsExistingTypeCached()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunIncremental(Source, AddedTargetSource);
+
+        // Assert
+        Assert.Contains(result.OutputReasons, static x => !x.IsChanged());
+    }
 }
