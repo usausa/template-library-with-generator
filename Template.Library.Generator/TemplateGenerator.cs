@@ -183,7 +183,7 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
             builder
                 .Indent()
-                .Append("Console.WriteLine(\"Hello world.\");")
+                .Append("global::System.Console.WriteLine(\"Hello world.\");")
                 .NewLine();
 
             builder.EndScope();

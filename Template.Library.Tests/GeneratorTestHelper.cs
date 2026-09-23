@@ -13,9 +13,17 @@ internal static class GeneratorTestHelper
     private static GeneratorTestRunner Runner => GeneratorTestRunner
         .For<TemplateGenerator>()
         .WithReference(typeof(CustomMethodAttribute).Assembly)
-        .WithDiagnosticPrefix("TP");
+        .WithDiagnosticPrefix("TP")
+        .VerifyCompiles();
 
     public static IReadOnlyList<Diagnostic> GetDiagnostics(string source) => Runner.GetDiagnostics(source);
+
+    // 診断の対象になる定義は生成されず、コンパイルも通らないので確認を外す
+    public static IReadOnlyList<Diagnostic> GetDiagnosticsWithoutVerify(string source) =>
+        Runner.VerifyCompiles(false).GetDiagnostics(source);
+
+    public static IReadOnlyList<Diagnostic> GetCompilationErrors(string source) =>
+        Runner.VerifyCompiles(false).Run(source).CompilationErrors;
 
     public static string GetGeneratedSource(string source) => Runner.GetGeneratedSource(source);
 

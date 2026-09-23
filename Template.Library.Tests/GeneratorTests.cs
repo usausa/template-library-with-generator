@@ -30,6 +30,17 @@ public sealed class GeneratorTests
         Assert.Contains("static partial void Method()", generated, StringComparison.Ordinal);
     }
 
+    // テスト用のコンパイルには暗黙の using が無い
+    [Fact]
+    public void GeneratedSourceCompilesWithoutImplicitUsings()
+    {
+        // Arrange & Act
+        var errors = GeneratorTestHelper.GetCompilationErrors(Source);
+
+        // Assert
+        Assert.Empty(errors);
+    }
+
     // ------------------------------------------------------------
     // Option
     // ------------------------------------------------------------

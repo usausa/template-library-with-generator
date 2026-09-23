@@ -24,7 +24,7 @@ public sealed class DiagnosticTests
             """;
 
         // Act
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
 
         // Assert
         Assert.Contains(diagnostics, static x => x.Id == "TP0001");
@@ -48,7 +48,7 @@ public sealed class DiagnosticTests
             """;
 
         // Act
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
 
         // Assert
         Assert.Contains(diagnostics, static x => x.Id == "TP0002");
@@ -72,7 +72,7 @@ public sealed class DiagnosticTests
             """;
 
         // Act
-        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
 
         // Assert
         Assert.Contains(diagnostics, static x => x.Id == "TP0003");
