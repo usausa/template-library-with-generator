@@ -9,8 +9,6 @@ internal static class Program
         Target.Method();
         Target.MessageMethod();
         Target.DebugMethod();
-
-        Console.WriteLine($"Registry: {CustomMethodRegistry.Count} [{String.Join(", ", CustomMethodRegistry.Names)}]");
     }
 }
 

@@ -1,7 +1,6 @@
 <Project>
 
   <ItemGroup>
-    <CompilerVisibleProperty Include="RootNamespace" />
     <CompilerVisibleProperty Include="TemplateLibraryGeneratorValue" />
   </ItemGroup>
 

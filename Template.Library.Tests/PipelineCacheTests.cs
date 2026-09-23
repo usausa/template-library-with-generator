@@ -100,27 +100,4 @@ public sealed class PipelineCacheTests
         // Assert
         Assert.Contains(result.OutputReasons, static x => !x.IsChanged());
     }
-
-    [Fact]
-    public void AddedTargetRebuildsRegistry()
-    {
-        // Arrange & Act
-        var result = GeneratorTestHelper.RunIncremental(Source, AddedTargetSource);
-
-        // Assert
-        var steps = result.SecondResult.Results[0].TrackedSteps;
-        Assert.Contains(steps["Registry"].SelectMany(static x => x.Outputs), static x => x.Reason.IsChanged());
-        Assert.Contains(steps["Types"].SelectMany(static x => x.Outputs), static x => !x.Reason.IsChanged());
-    }
-
-    [Fact]
-    public void UnrelatedEditKeepsRegistryCached()
-    {
-        // Arrange & Act
-        var result = GeneratorTestHelper.RunIncremental(Source, UnrelatedSource);
-
-        // Assert
-        var steps = result.SecondResult.Results[0].TrackedSteps;
-        Assert.DoesNotContain(steps["Registry"].SelectMany(static x => x.Outputs), static x => x.Reason.IsChanged());
-    }
 }

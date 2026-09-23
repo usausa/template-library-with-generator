@@ -188,38 +188,6 @@ public sealed class DiagnosticTests
     }
 
     // ------------------------------------------------------------
-    // Registry
-    // ------------------------------------------------------------
-
-    [Fact]
-    public void InvalidDefinitionIsExcludedFromRegistry()
-    {
-        // Arrange
-        const string source =
-            """
-            using Template.Library;
-
-            namespace Test;
-
-            internal static partial class Target
-            {
-                [CustomMethod]
-                public static partial void Valid();
-
-                [CustomMethod]
-                public static partial void Invalid(int value);
-            }
-            """;
-
-        // Act
-        var registry = GeneratorTestHelper.GetRegistrySourceWithoutVerify(source);
-
-        // Assert
-        Assert.Contains("public const int Count = 1;", registry, StringComparison.Ordinal);
-        Assert.DoesNotContain("Invalid", registry, StringComparison.Ordinal);
-    }
-
-    // ------------------------------------------------------------
     // Valid
     // ------------------------------------------------------------
 

@@ -9,6 +9,5 @@ internal sealed record MethodModel(
     EquatableArray<ContainingTypeModel> Types,
     Accessibility MethodAccessibility,
     string MethodName,
-    string FullName,
     string? Message,
     MethodOutput Output);
