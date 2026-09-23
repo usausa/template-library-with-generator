@@ -8,4 +8,6 @@ internal sealed record MethodModel(
     string Namespace,
     EquatableArray<ContainingTypeModel> Types,
     Accessibility MethodAccessibility,
-    string MethodName);
+    string MethodName,
+    string? Message,
+    MethodOutput Output);

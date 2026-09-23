@@ -229,16 +229,130 @@ public sealed class GeneratorTests
     }
 
     // ------------------------------------------------------------
+    // Attribute argument
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void DefaultMessageIsUsedWithoutArgument()
+    {
+        // Arrange & Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(Source);
+
+        // Assert
+        Assert.Contains("global::System.Console.WriteLine(\"Hello world.\");", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MessageArgumentIsUsed()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod("Hi")]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Contains("global::System.Console.WriteLine(\"Hi\");", generated, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("Console", "global::System.Console.WriteLine")]
+    [InlineData("Debug", "global::System.Diagnostics.Debug.WriteLine")]
+    [InlineData("Trace", "global::System.Diagnostics.Trace.WriteLine")]
+    public void OutputArgumentSelectsWriter(string output, string writer)
+    {
+        // Arrange
+        var source =
+            $$"""
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod(Output = CustomMethodOutput.{{output}})]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Contains($"{writer}(\"Hello world.\");", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MessageIsEscapedAsStringLiteral()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod("a\"b\nc")]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Contains("WriteLine(\"a\\\"b\\nc\");", generated, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------
     // Option
     // ------------------------------------------------------------
 
     [Fact]
-    public void BuildPropertyIsEmbeddedInGeneratedSource()
+    public void BuildPropertyIsUsedAsDefaultMessage()
     {
         // Arrange & Act
         var generated = GeneratorTestHelper.GetGeneratedSource(Source, "custom");
 
         // Assert
-        Assert.Contains("// Option: custom", generated, StringComparison.Ordinal);
+        Assert.Contains("global::System.Console.WriteLine(\"custom\");", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void MessageArgumentOverridesBuildProperty()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod("Hi")]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source, "custom");
+
+        // Assert
+        Assert.Contains("global::System.Console.WriteLine(\"Hi\");", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("custom", generated, StringComparison.Ordinal);
     }
 }

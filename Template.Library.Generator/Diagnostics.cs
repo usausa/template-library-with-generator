@@ -35,4 +35,12 @@ internal static class Diagnostics
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    public static DiagnosticDescriptor InvalidAttributeArgument { get; } = new(
+        id: "TP0005",
+        title: "Invalid attribute argument",
+        messageFormat: "[CustomMethod] argument is invalid. argument=[{0}], method=[{1}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

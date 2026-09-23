@@ -19,6 +19,10 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 {
     private const string AttributeName = "Template.Library.CustomMethodAttribute";
 
+    private const string OutputPropertyName = "Output";
+
+    private const string DefaultMessage = "Hello world.";
+
     // ------------------------------------------------------------
     // Initialize
     // ------------------------------------------------------------
@@ -102,6 +106,30 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             types.Insert(0, new ContainingTypeModel(keyword, GetTypeName(typeSyntax), GetHintName(typeSyntax)));
         }
 
+        // Validate attribute argument
+        var attribute = context.Attributes[0];
+        var message = attribute.ConstructorArguments.Length > 0 ? attribute.ConstructorArguments[0].Value as string : null;
+        if ((message is not null) && String.IsNullOrWhiteSpace(message))
+        {
+            return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidAttributeArgument, GetArgumentLocation(attribute, null) ?? syntax.GetLocation(), "message", symbol.Name));
+        }
+
+        var output = MethodOutput.Console;
+        foreach (var argument in attribute.NamedArguments)
+        {
+            if (argument.Key != OutputPropertyName)
+            {
+                continue;
+            }
+
+            if ((argument.Value.Value is not int value) || !Enum.IsDefined(typeof(MethodOutput), value))
+            {
+                return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidAttributeArgument, GetArgumentLocation(attribute, OutputPropertyName) ?? syntax.GetLocation(), OutputPropertyName, symbol.Name));
+            }
+
+            output = (MethodOutput)value;
+        }
+
         var containingType = symbol.ContainingType;
         var ns = String.IsNullOrEmpty(containingType.ContainingNamespace.Name)
             ? string.Empty
@@ -111,7 +139,22 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             ns,
             new EquatableArray<ContainingTypeModel>(types),
             symbol.DeclaredAccessibility,
-            symbol.Name));
+            symbol.Name,
+            message,
+            output));
+    }
+
+    private static Location? GetArgumentLocation(AttributeData attribute, string? name)
+    {
+        if (attribute.ApplicationSyntaxReference?.GetSyntax() is not AttributeSyntax { ArgumentList: { } list })
+        {
+            return null;
+        }
+
+        var argument = name is null
+            ? list.Arguments.FirstOrDefault(static x => x.NameEquals is null)
+            : list.Arguments.FirstOrDefault(x => x.NameEquals?.Name.Identifier.Text == name);
+        return argument?.GetLocation();
     }
 
     private static string? GetKeyword(TypeDeclarationSyntax syntax) =>
@@ -193,8 +236,6 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             builder.BeginScope();
         }
 
-        builder.Indent().Append("// Option: ").Append(option.Value).NewLine();
-
         var first = true;
         foreach (var method in type.Methods)
         {
@@ -217,9 +258,13 @@ public sealed class TemplateGenerator : IIncrementalGenerator
                 .NewLine();
             builder.BeginScope();
 
+            var message = method.Message ?? (String.IsNullOrEmpty(option.Value) ? DefaultMessage : option.Value);
             builder
                 .Indent()
-                .Append("global::System.Console.WriteLine(\"Hello world.\");")
+                .Append(GetWriteLine(method.Output))
+                .Append("(")
+                .Append(SymbolDisplay.FormatLiteral(message, true))
+                .Append(");")
                 .NewLine();
 
             builder.EndScope();
@@ -234,6 +279,14 @@ public sealed class TemplateGenerator : IIncrementalGenerator
     // ------------------------------------------------------------
     // Helper
     // ------------------------------------------------------------
+
+    private static string GetWriteLine(MethodOutput output) =>
+        output switch
+        {
+            MethodOutput.Debug => "global::System.Diagnostics.Debug.WriteLine",
+            MethodOutput.Trace => "global::System.Diagnostics.Trace.WriteLine",
+            _ => "global::System.Console.WriteLine"
+        };
 
     private static string MakeFilename(string ns, EquatableArray<ContainingTypeModel> types)
     {

@@ -134,6 +134,60 @@ public sealed class DiagnosticTests
     }
 
     // ------------------------------------------------------------
+    // Attribute argument
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void Tp0005EmptyMessageEmitsDiagnosticAtArgument()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod("")]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
+
+        // Assert
+        var diagnostic = Assert.Single(diagnostics, static x => x.Id == "TP0005");
+        var span = diagnostic.Location.SourceSpan;
+        Assert.Equal("\"\"", source[span.Start..span.End]);
+    }
+
+    [Fact]
+    public void Tp0005UndefinedOutputEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod(Output = (CustomMethodOutput)99)]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0005");
+    }
+
+    // ------------------------------------------------------------
     // Valid
     // ------------------------------------------------------------
 

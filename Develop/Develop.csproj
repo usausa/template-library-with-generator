@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TemplateLibraryGeneratorValue>test</TemplateLibraryGeneratorValue>
+    <TemplateLibraryGeneratorValue>Hello from MSBuild.</TemplateLibraryGeneratorValue>
   </PropertyGroup>
 
   <Import Project="..\Template.Library.targets" />
