@@ -26,7 +26,9 @@ internal static partial class RuntimeOuter
 
 internal partial interface IRuntimeTarget<out T>
 {
+#pragma warning disable IDE0051
     T Value { get; }
+#pragma warning restore IDE0051
 
     [CustomMethod("Hello from interface.")]
     public static partial void Method();
