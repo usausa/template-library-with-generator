@@ -1,4 +1,13 @@
 <Solution>
+  <Folder Name="/Example/">
+    <Project Path="Develop/Develop.csproj" />
+  </Folder>
+  <Folder Name="/Library/">
+    <Project Path="Template.Library.Generator/Template.Library.Generator.csproj" />
+    <Project Path="Template.Library/Template.Library.csproj">
+      <BuildDependency Project="Template.Library.Generator/Template.Library.Generator.csproj" />
+    </Project>
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path=".gitattributes" />
@@ -16,10 +25,8 @@
     <File Path="Template.Library.props" />
     <File Path="Template.Library.targets" />
   </Folder>
-  <Project Path="Develop/Develop.csproj" DefaultStartup="true" />
-  <Project Path="Template.Library/Template.Library.csproj">
-    <BuildDependency Project="Template.Library.Generator/Template.Library.Generator.csproj" />
-  </Project>
-  <Project Path="Template.Library.Generator/Template.Library.Generator.csproj" />
-  <Project Path="Template.Library.Tests/Template.Library.Tests.csproj" />
+  <Folder Name="/Test/">
+    <Project Path="Template.Library.Tests.Options/Template.Library.Tests.Options.csproj" />
+    <Project Path="Template.Library.Tests/Template.Library.Tests.csproj" />
+  </Folder>
 </Solution>
