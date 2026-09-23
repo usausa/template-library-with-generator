@@ -27,4 +27,12 @@ internal static class Diagnostics
         category: "Usage",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true);
+
+    public static DiagnosticDescriptor InvalidContainingType { get; } = new(
+        id: "TP0004",
+        title: "Invalid containing type",
+        messageFormat: "[CustomMethod] containing type must be partial and must not be file-local. type=[{0}]",
+        category: "Usage",
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true);
 }

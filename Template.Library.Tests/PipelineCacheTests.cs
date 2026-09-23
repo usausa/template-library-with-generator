@@ -17,6 +17,22 @@ public sealed class PipelineCacheTests
         }
         """;
 
+    private const string NestedSource =
+        """
+        using Template.Library;
+
+        namespace Test;
+
+        internal static partial class Outer<T>
+        {
+            internal partial record struct Inner
+            {
+                [CustomMethod]
+                public static partial void Method();
+            }
+        }
+        """;
+
     private const string UnrelatedSource =
         """
         namespace Other;
@@ -54,6 +70,18 @@ public sealed class PipelineCacheTests
     }
 
     [Fact]
+    public void NestedTypeUnrelatedEditKeepsModelCached()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunIncremental(NestedSource, UnrelatedSource);
+
+        // Assert
+        Assert.Equal(result.FirstGeneratedText, result.SecondGeneratedText);
+        Assert.NotEmpty(result.OutputReasons);
+        Assert.DoesNotContain(result.OutputReasons, static x => x.IsChanged());
+    }
+
+    [Fact]
     public void TargetEditRebuildsModel()
     {
         // Arrange & Act
@@ -63,7 +91,6 @@ public sealed class PipelineCacheTests
         Assert.Contains(result.OutputReasons, static x => x.IsChanged());
     }
 
-    // 型単位の出力なので、別の型を足しても既存の型の出力は再生成されない
     [Fact]
     public void AddedTargetKeepsExistingTypeCached()
     {

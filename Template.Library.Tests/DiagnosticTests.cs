@@ -78,6 +78,65 @@ public sealed class DiagnosticTests
         Assert.Contains(diagnostics, static x => x.Id == "TP0003");
     }
 
+    // ------------------------------------------------------------
+    // Containing type
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void Tp0004NonPartialContainingTypeEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static class Outer
+            {
+                internal static partial class Inner
+                {
+                    [CustomMethod]
+                    public static partial void Method();
+                }
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0004");
+    }
+
+    [Fact]
+    public void Tp0004FileLocalTypeEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            file static partial class Target
+            {
+                [CustomMethod]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnosticsWithoutVerify(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0004");
+    }
+
+    // ------------------------------------------------------------
+    // Valid
+    // ------------------------------------------------------------
+
     [Fact]
     public void ValidDefinitionEmitsNoDiagnostic()
     {

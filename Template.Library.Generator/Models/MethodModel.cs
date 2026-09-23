@@ -2,9 +2,10 @@ namespace Template.Library.Generator.Models;
 
 using Microsoft.CodeAnalysis;
 
+using SourceGenerateHelper;
+
 internal sealed record MethodModel(
     string Namespace,
-    string ClassName,
-    bool IsValueType,
+    EquatableArray<ContainingTypeModel> Types,
     Accessibility MethodAccessibility,
     string MethodName);

@@ -18,7 +18,6 @@ internal static class GeneratorTestHelper
 
     public static IReadOnlyList<Diagnostic> GetDiagnostics(string source) => Runner.GetDiagnostics(source);
 
-    // 診断の対象になる定義は生成されず、コンパイルも通らないので確認を外す
     public static IReadOnlyList<Diagnostic> GetDiagnosticsWithoutVerify(string source) =>
         Runner.VerifyCompiles(false).GetDiagnostics(source);
 
@@ -26,6 +25,8 @@ internal static class GeneratorTestHelper
         Runner.VerifyCompiles(false).Run(source).CompilationErrors;
 
     public static string GetGeneratedSource(string source) => Runner.GetGeneratedSource(source);
+
+    public static IReadOnlyDictionary<string, string> GetGeneratedSources(string source) => Runner.Run(source).GeneratedSources;
 
     public static string GetGeneratedSource(string source, string optionValue) => Runner
         .WithGlobalOption("build_property.TemplateLibraryGeneratorValue", optionValue)
