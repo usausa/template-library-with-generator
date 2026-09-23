@@ -9,6 +9,8 @@ internal static class Program
         Target.Method();
         Target.MessageMethod();
         Target.DebugMethod();
+
+        CustomMethodProvider.FindMethod("Develop.Target.MessageMethod")?.Invoke();
     }
 }
 

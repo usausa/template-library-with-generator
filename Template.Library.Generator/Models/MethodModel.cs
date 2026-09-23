@@ -1,13 +1,12 @@
 namespace Template.Library.Generator.Models;
 
-using Microsoft.CodeAnalysis;
-
 using SourceGenerateHelper;
 
 internal sealed record MethodModel(
     string Namespace,
     EquatableArray<ContainingTypeModel> Types,
-    Accessibility MethodAccessibility,
+    string AccessibilityModifiers,
     string MethodName,
+    bool IsRegistrable,
     string? Message,
     MethodOutput Output);

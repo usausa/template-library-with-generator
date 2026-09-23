@@ -41,6 +41,84 @@ public sealed class GeneratorTests
     }
 
     // ------------------------------------------------------------
+    // Accessibility
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void ImplicitPrivateMethodKeepsNoModifier()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Contains("static partial void Method()", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static partial void Method()", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ImplicitPrivateInterfaceMethodKeepsNoModifier()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal partial interface ITarget
+            {
+                [CustomMethod]
+                static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Contains("static partial void Method()", generated, StringComparison.Ordinal);
+        Assert.DoesNotContain("private static partial void Method()", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AccessibilityModifiersAreCopied()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal partial class Target
+            {
+                [CustomMethod]
+                private protected static partial void Method();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Contains("private protected static partial void Method()", generated, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------
     // Containing type
     // ------------------------------------------------------------
 
@@ -354,5 +432,92 @@ public sealed class GeneratorTests
         // Assert
         Assert.Contains("global::System.Console.WriteLine(\"Hi\");", generated, StringComparison.Ordinal);
         Assert.DoesNotContain("custom", generated, StringComparison.Ordinal);
+    }
+
+    // ------------------------------------------------------------
+    // Registry
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void RegistryRegistersMethodsOfAllTypes()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                public static partial void Method();
+            }
+
+            internal static partial class Outer
+            {
+                internal partial record struct Inner
+                {
+                    [CustomMethod]
+                    internal static partial void Method();
+                }
+            }
+            """;
+
+        // Act
+        var sources = GeneratorTestHelper.GetGeneratedSources(source);
+
+        // Assert
+        var registry = sources["CustomMethodInitializer.g.cs"];
+        Assert.Contains("[global::System.Runtime.CompilerServices.ModuleInitializer]", registry, StringComparison.Ordinal);
+        Assert.Contains("RegisterMethod(\"Test.Target.Method\", global::Test.Target.Method);", registry, StringComparison.Ordinal);
+        Assert.Contains("RegisterMethod(\"Test.Outer.Inner.Method\", global::Test.Outer.Inner.Method);", registry, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GlobalNamespaceMethodIsRegisteredWithoutNamespace()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var sources = GeneratorTestHelper.GetGeneratedSources(source);
+
+        // Assert
+        Assert.Contains("RegisterMethod(\"Target.Method\", global::Target.Method);", sources["CustomMethodInitializer.g.cs"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RegistryIsNotGeneratedWithoutRegistrableMethod()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                private static partial void Method();
+            }
+            """;
+
+        // Act
+        var sources = GeneratorTestHelper.GetGeneratedSources(source);
+
+        // Assert
+        Assert.Contains("Test_Target.g.cs", sources.Keys);
+        Assert.DoesNotContain("CustomMethodInitializer.g.cs", sources.Keys);
     }
 }

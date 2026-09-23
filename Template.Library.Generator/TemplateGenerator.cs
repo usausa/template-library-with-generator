@@ -8,7 +8,6 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
 
 using SourceGenerateHelper;
 
@@ -50,6 +49,14 @@ public sealed class TemplateGenerator : IIncrementalGenerator
         context.RegisterImplementationSourceOutput(
             typeProvider.Combine(optionProvider),
             static (context, provider) => Execute(context, provider.Right, provider.Left));
+
+        var registryProvider = methodProvider
+            .Select(static (methods, _) => SelectRegistry(methods))
+            .WithTrackingName("Registry");
+
+        context.RegisterImplementationSourceOutput(
+            registryProvider,
+            static (context, registry) => ExecuteRegistry(context, registry));
     }
 
     // ------------------------------------------------------------
@@ -135,13 +142,22 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             ? string.Empty
             : containingType.ContainingNamespace.ToDisplayString();
 
-        return Results.Success(new MethodModel(
+        var model = new MethodModel(
             ns,
             new EquatableArray<ContainingTypeModel>(types),
-            symbol.DeclaredAccessibility,
+            GetAccessibilityModifiers(syntax),
             symbol.Name,
+            IsRegistrable(symbol),
             message,
-            output));
+            output);
+
+        // Validate registration
+        if (!model.IsRegistrable)
+        {
+            return new Result<MethodModel>(model, new EquatableArray<DiagnosticInfo>([new DiagnosticInfo(Diagnostics.MethodNotRegistered, syntax.GetLocation(), symbol.Name)]));
+        }
+
+        return Results.Success(model);
     }
 
     private static Location? GetArgumentLocation(AttributeData attribute, string? name)
@@ -177,6 +193,32 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             ? $"{syntax.Identifier.Text}[{String.Join(",", list.Parameters.Select(static x => x.Identifier.Text))}]"
             : syntax.Identifier.Text;
 
+    private static string GetAccessibilityModifiers(MethodDeclarationSyntax syntax) =>
+        String.Join(" ", syntax.Modifiers
+            .Where(static x => x.Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
+            .Select(static x => x.Text));
+
+    private static bool IsRegistrable(IMethodSymbol symbol)
+    {
+        if (!IsAssemblyAccessible(symbol.DeclaredAccessibility))
+        {
+            return false;
+        }
+
+        for (var type = symbol.ContainingType; type is not null; type = type.ContainingType)
+        {
+            if (!IsAssemblyAccessible(type.DeclaredAccessibility) || (type.Arity > 0))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsAssemblyAccessible(Accessibility accessibility) =>
+        accessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal;
+
     // ------------------------------------------------------------
     // Generator
     // ------------------------------------------------------------
@@ -203,9 +245,7 @@ public sealed class TemplateGenerator : IIncrementalGenerator
         var builder = new SourceBuilder();
         BuildSource(builder, option, type);
 
-        var filename = MakeFilename(type.Namespace, type.Types);
-        var source = builder.ToString();
-        context.AddSource(filename, SourceText.From(source, Encoding.UTF8));
+        context.AddSource(MakeFilename(type.Namespace, type.Types), builder);
     }
 
     private static void BuildSource(SourceBuilder builder, OptionModel option, TypeModel type)
@@ -249,10 +289,16 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             }
 
             // method
+            builder.Indent();
+            if (!String.IsNullOrEmpty(method.AccessibilityModifiers))
+            {
+                builder
+                    .Append(method.AccessibilityModifiers)
+                    .Append(" ");
+            }
+
             builder
-                .Indent()
-                .Append(method.MethodAccessibility.ToText())
-                .Append(" static partial void ")
+                .Append("static partial void ")
                 .Append(method.MethodName)
                 .Append("()")
                 .NewLine();
@@ -277,6 +323,72 @@ public sealed class TemplateGenerator : IIncrementalGenerator
     }
 
     // ------------------------------------------------------------
+    // Registry
+    // ------------------------------------------------------------
+
+    private static RegistryModel SelectRegistry(ImmutableArray<Result<MethodModel>> methods) =>
+        new(new EquatableArray<RegistryMethodModel>(methods.SelectValue()
+            .Where(static x => x.IsRegistrable)
+            .Select(static x => new RegistryMethodModel(
+                x.Namespace,
+                String.Join(".", x.Types.Select(static y => y.Name)),
+                x.MethodName))));
+
+    private static void ExecuteRegistry(SourceProductionContext context, RegistryModel registry)
+    {
+        if (registry.Methods.Count == 0)
+        {
+            return;
+        }
+
+        var builder = new SourceBuilder();
+        BuildRegistrySource(builder, registry);
+
+        context.AddSource("CustomMethodInitializer.g.cs", builder);
+    }
+
+    private static void BuildRegistrySource(SourceBuilder builder, RegistryModel registry)
+    {
+        builder.AutoGenerated();
+        builder.EnableNullable();
+        builder.NewLine();
+
+        // type
+        builder
+            .Indent()
+            .Append("internal static class CustomMethodInitializer")
+            .NewLine();
+        builder.BeginScope();
+
+        // method
+        builder
+            .Indent()
+            .Append("[global::System.Runtime.CompilerServices.ModuleInitializer]")
+            .NewLine();
+        builder
+            .Indent()
+            .Append("public static void Initialize()")
+            .NewLine();
+        builder.BeginScope();
+
+        foreach (var method in registry.Methods)
+        {
+            var name = MakeMethodName(method);
+            builder
+                .Indent()
+                .Append("global::Template.Library.Internal.CustomMethodRegistry.RegisterMethod(")
+                .Append(SymbolDisplay.FormatLiteral(name, true))
+                .Append(", global::")
+                .Append(name)
+                .Append(");")
+                .NewLine();
+        }
+
+        builder.EndScope();
+        builder.EndScope();
+    }
+
+    // ------------------------------------------------------------
     // Helper
     // ------------------------------------------------------------
 
@@ -287,6 +399,11 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             MethodOutput.Trace => "global::System.Diagnostics.Trace.WriteLine",
             _ => "global::System.Console.WriteLine"
         };
+
+    private static string MakeMethodName(RegistryMethodModel method) =>
+        String.IsNullOrEmpty(method.Namespace)
+            ? $"{method.TypeName}.{method.MethodName}"
+            : $"{method.Namespace}.{method.TypeName}.{method.MethodName}";
 
     private static string MakeFilename(string ns, EquatableArray<ContainingTypeModel> types)
     {

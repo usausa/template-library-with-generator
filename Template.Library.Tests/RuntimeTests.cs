@@ -108,6 +108,42 @@ public sealed class RuntimeTests
     }
 
     // ------------------------------------------------------------
+    // Registry
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void RegisteredMethodIsFoundByName()
+    {
+        // Arrange & Act
+        var method = CustomMethodProvider.FindMethod("Template.Library.RuntimeTarget.AttributeMessage");
+
+        // Assert
+        Assert.NotNull(method);
+        Assert.Equal($"Hello from attribute.{Environment.NewLine}", CaptureConsole(method));
+    }
+
+    [Fact]
+    public void NestedTypeMethodIsFoundByName()
+    {
+        // Arrange & Act
+        var method = CustomMethodProvider.FindMethod("Template.Library.RuntimeOuter.Inner.Method");
+
+        // Assert
+        Assert.NotNull(method);
+        Assert.Equal($"Hello from nested record struct.{Environment.NewLine}", CaptureConsole(method));
+    }
+
+    [Fact]
+    public void UnknownNameIsNotFound()
+    {
+        // Arrange & Act
+        var method = CustomMethodProvider.FindMethod("Template.Library.RuntimeTarget.Unknown");
+
+        // Assert
+        Assert.Null(method);
+    }
+
+    // ------------------------------------------------------------
     // Helper
     // ------------------------------------------------------------
 

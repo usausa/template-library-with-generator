@@ -100,4 +100,15 @@ public sealed class PipelineCacheTests
         // Assert
         Assert.Contains(result.OutputReasons, static x => !x.IsChanged());
     }
+
+    [Fact]
+    public void AddedTargetRebuildsRegistry()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunIncremental(Source, AddedTargetSource);
+
+        // Assert
+        Assert.DoesNotContain("\"Test.AddedTarget.Method\"", result.FirstGeneratedText, StringComparison.Ordinal);
+        Assert.Contains("\"Test.AddedTarget.Method\"", result.SecondGeneratedText, StringComparison.Ordinal);
+    }
 }

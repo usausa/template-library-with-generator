@@ -188,6 +188,109 @@ public sealed class DiagnosticTests
     }
 
     // ------------------------------------------------------------
+    // Registry
+    // ------------------------------------------------------------
+
+    [Fact]
+    public void Tp0006PrivateMethodEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                private static partial void Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0006");
+    }
+
+    [Fact]
+    public void Tp0006PrivateContainingTypeEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Outer
+            {
+                private static partial class Inner
+                {
+                    [CustomMethod]
+                    public static partial void Method();
+                }
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0006");
+    }
+
+    [Fact]
+    public void Tp0006GenericContainingTypeEmitsDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target<T>
+            {
+                [CustomMethod]
+                public static partial void Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // Assert
+        Assert.Contains(diagnostics, static x => x.Id == "TP0006");
+    }
+
+    [Fact]
+    public void Tp0006ProtectedInternalMethodEmitsNoDiagnostic()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal partial class Target
+            {
+                [CustomMethod]
+                protected internal static partial void Method();
+            }
+            """;
+
+        // Act
+        var diagnostics = GeneratorTestHelper.GetDiagnostics(source);
+
+        // Assert
+        Assert.Empty(diagnostics);
+    }
+
+    // ------------------------------------------------------------
     // Valid
     // ------------------------------------------------------------
 
