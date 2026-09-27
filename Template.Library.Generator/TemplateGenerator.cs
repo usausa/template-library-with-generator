@@ -190,8 +190,8 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
     private static string GetHintName(TypeDeclarationSyntax syntax) =>
         syntax.TypeParameterList is { Parameters.Count: > 0 } list
-            ? $"{syntax.Identifier.Text}[{String.Join(",", list.Parameters.Select(static x => x.Identifier.Text))}]"
-            : syntax.Identifier.Text;
+            ? $"{syntax.Identifier.ValueText}[{String.Join(",", list.Parameters.Select(static x => x.Identifier.ValueText))}]"
+            : syntax.Identifier.ValueText;
 
     private static string GetAccessibilityModifiers(MethodDeclarationSyntax syntax) =>
         String.Join(" ", syntax.Modifiers
@@ -411,7 +411,7 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
         if (!String.IsNullOrEmpty(ns))
         {
-            buffer.Append(ns.Replace('.', '_'));
+            buffer.Append(ns.Replace("@", String.Empty).Replace('.', '_'));
             buffer.Append('_');
         }
 

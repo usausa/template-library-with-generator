@@ -306,6 +306,39 @@ public sealed class GeneratorTests
         Assert.Contains(sources.Keys, static x => x.EndsWith("Test_Outer_Inner.g.cs", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public void VerbatimIdentifiersGenerateFileNamesWithoutAt()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace @event;
+
+            internal static partial class @class
+            {
+                [CustomMethod]
+                public static partial void Method();
+
+                internal static partial class @struct<@int>
+                {
+                    [CustomMethod]
+                    public static partial void Method();
+                }
+            }
+            """;
+
+        // Act
+        var sources = GeneratorTestHelper.GetGeneratedSources(source);
+
+        // Assert
+        Assert.Contains(sources.Keys, static x => x.EndsWith("event_class.g.cs", StringComparison.Ordinal));
+        Assert.Contains(sources.Keys, static x => x.EndsWith("event_class.struct[int].g.cs", StringComparison.Ordinal));
+        Assert.DoesNotContain(sources.Keys, static x => x.Contains('@', StringComparison.Ordinal));
+        Assert.Contains(sources.Values, static x => x.Contains("partial class @struct<@int>", StringComparison.Ordinal));
+    }
+
     // ------------------------------------------------------------
     // Attribute argument
     // ------------------------------------------------------------
