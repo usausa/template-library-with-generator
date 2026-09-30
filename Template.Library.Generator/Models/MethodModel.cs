@@ -5,8 +5,9 @@ using SourceGenerateHelper;
 internal sealed record MethodModel(
     string Namespace,
     EquatableArray<ContainingTypeModel> Types,
-    string AccessibilityModifiers,
-    string MethodName,
-    bool IsRegistrable,
+    string HintName,
+    string Signature,
+    RegistryMethodModel? Registration,
     string? Message,
-    MethodOutput Output);
+    MethodOutput Output,
+    bool IsFallback);

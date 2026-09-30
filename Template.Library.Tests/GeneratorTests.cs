@@ -118,6 +118,91 @@ public sealed class GeneratorTests
         Assert.Contains("private protected static partial void Method()", generated, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void NewModifierIsCopied()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal class Base
+            {
+                public static void Method()
+                {
+                }
+            }
+
+            internal sealed partial class Target : Base
+            {
+                [CustomMethod]
+                public static new partial void Method();
+            }
+            """;
+
+        // Act
+        var problems = GeneratorTestHelper.GetProblemIds(source);
+        var generated = GeneratorTestHelper.GetGeneratedSource(source);
+
+        // Assert
+        Assert.Empty(problems);
+        Assert.Contains("public static new partial void Method()", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void GenericMethodKeepsTypeParametersAndConstraints()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                public static partial void Method<T>()
+                    where T : class, new();
+            }
+            """;
+
+        // Act
+        var generated = GeneratorTestHelper.GetAllGeneratedSource(source);
+
+        // Assert
+        Assert.Contains("public static partial void Method<T>() where T : class, new()", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void KeywordMethodNameIsEscaped()
+    {
+        // Arrange
+        const string source =
+            """
+            using Template.Library;
+
+            namespace Test;
+
+            internal static partial class Target
+            {
+                [CustomMethod]
+                public static partial void @event();
+            }
+            """;
+
+        // Act
+        var problems = GeneratorTestHelper.GetProblemIds(source);
+        var generated = GeneratorTestHelper.GetAllGeneratedSource(source);
+
+        // Assert
+        Assert.Empty(problems);
+        Assert.Contains("public static partial void @event()", generated, StringComparison.Ordinal);
+        Assert.Contains("RegisterMethod(\"Test.Target.event\", global::Test.Target.@event)", generated, StringComparison.Ordinal);
+    }
+
     // ------------------------------------------------------------
     // Containing type
     // ------------------------------------------------------------
@@ -302,8 +387,8 @@ public sealed class GeneratorTests
         var sources = GeneratorTestHelper.GetGeneratedSources(source);
 
         // Assert
-        Assert.Contains(sources.Keys, static x => x.EndsWith("Test_Outer.Inner.g.cs", StringComparison.Ordinal));
-        Assert.Contains(sources.Keys, static x => x.EndsWith("Test_Outer_Inner.g.cs", StringComparison.Ordinal));
+        Assert.Contains(sources.Keys, static x => x.EndsWith("Test_Outer+Inner.g.cs", StringComparison.Ordinal));
+        Assert.Contains(sources.Keys, static x => x.EndsWith("Test_Outer-Inner.g.cs", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -334,7 +419,7 @@ public sealed class GeneratorTests
 
         // Assert
         Assert.Contains(sources.Keys, static x => x.EndsWith("event_class.g.cs", StringComparison.Ordinal));
-        Assert.Contains(sources.Keys, static x => x.EndsWith("event_class.struct[int].g.cs", StringComparison.Ordinal));
+        Assert.Contains(sources.Keys, static x => x.EndsWith("event_class+struct`1.g.cs", StringComparison.Ordinal));
         Assert.DoesNotContain(sources.Keys, static x => x.Contains('@', StringComparison.Ordinal));
         Assert.Contains(sources.Values, static x => x.Contains("partial class @struct<@int>", StringComparison.Ordinal));
     }

@@ -24,7 +24,12 @@ internal static class GeneratorTestHelper
     public static IReadOnlyList<Diagnostic> GetCompilationErrors(string source) =>
         Runner.VerifyCompiles(false).Run(source).CompilationErrors;
 
+    public static IReadOnlyList<string> GetProblemIds(string source) =>
+        [.. Runner.VerifyCompiles(false).GetProblems(source).Select(static x => x.Id)];
+
     public static string GetGeneratedSource(string source) => Runner.GetGeneratedSource(source);
+
+    public static string GetAllGeneratedSource(string source) => Runner.VerifyCompiles(false).Run(source).AllGeneratedText;
 
     public static IReadOnlyDictionary<string, string> GetGeneratedSources(string source) => Runner.Run(source).GeneratedSources;
 
@@ -34,4 +39,7 @@ internal static class GeneratorTestHelper
 
     public static IncrementalRunResult RunIncremental(string source, string addedSource) =>
         Runner.WithTracking().RunIncremental(source, addedSource);
+
+    public static IncrementalRunResult RunIncrementalEdit(string source, string editedSource) =>
+        Runner.WithTracking().RunIncrementalEdit(source, editedSource);
 }

@@ -2,7 +2,6 @@ namespace Template.Library.Generator;
 
 using System;
 using System.Collections.Immutable;
-using System.Text;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -22,6 +21,9 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
     private const string DefaultMessage = "Hello world.";
 
+    private static readonly SymbolDisplayFormat RegistryNameFormat = new(
+        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces);
+
     // ------------------------------------------------------------
     // Initialize
     // ------------------------------------------------------------
@@ -36,11 +38,16 @@ public sealed class TemplateGenerator : IIncrementalGenerator
                 AttributeName,
                 static (syntax, _) => IsMethodSyntax(syntax),
                 static (context, _) => GetMethodModel(context))
+            .WithTrackingName("Methods")
             .Collect();
 
+        var treeProvider = context.ForAttributeWithMetadataNameSyntaxTrees(
+            AttributeName,
+            static (syntax, _) => IsMethodSyntax(syntax));
+
         context.RegisterSourceOutput(
-            methodProvider,
-            static (context, methods) => ReportDiagnostics(context, methods));
+            methodProvider.Combine(treeProvider),
+            static (context, provider) => context.ReportDiagnostics(SelectDiagnostics(provider.Left), provider.Right));
 
         var typeProvider = methodProvider
             .SelectMany(static (methods, _) => SelectTypes(methods))
@@ -75,30 +82,68 @@ public sealed class TemplateGenerator : IIncrementalGenerator
     private static Result<MethodModel> GetMethodModel(GeneratorAttributeSyntaxContext context)
     {
         var syntax = (MethodDeclarationSyntax)context.TargetNode;
-        if (context.SemanticModel.GetDeclaredSymbol(syntax) is not { } symbol)
+        if (context.TargetSymbol is not IMethodSymbol symbol)
         {
             return Results.Errors<MethodModel>();
         }
 
-        // Validate method definition
-        if (!symbol.IsStatic || !symbol.IsPartialDefinition)
+        var location = syntax.Identifier.GetLocation();
+        var definitionError = ValidateDefinition(symbol, location);
+        var types = GetContainingTypes(syntax, out var typeError);
+        var argumentError = ReadAttribute(context.Attributes[0], symbol.Name, location, out var message, out var output);
+
+        var containingType = symbol.ContainingType;
+        var ns = containingType.ContainingNamespace.IsGlobalNamespace
+            ? string.Empty
+            : containingType.ContainingNamespace.ToDisplayString();
+
+        var model = new MethodModel(
+            ns,
+            new EquatableArray<ContainingTypeModel>(types),
+            HintNameBuilder.BuildFromType(containingType),
+            symbol.GetImplementationSignature(syntax),
+            IsRegistrable(symbol) ? new RegistryMethodModel(GetRegistryName(symbol), GetMethodReference(symbol)) : null,
+            message,
+            output,
+            false);
+
+        if ((definitionError ?? typeError ?? argumentError) is { } error)
         {
-            return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidMethodDefinition, syntax.GetLocation(), symbol.Name));
+            return symbol.IsPartialDefinition && (symbol.PartialImplementationPart is null) && (typeError is null)
+                ? new Result<MethodModel>(model with { Registration = null, IsFallback = true }, new EquatableArray<DiagnosticInfo>([error]))
+                : Results.Error<MethodModel>(error);
         }
 
-        // Validate parameter
+        if (model.Registration is null)
+        {
+            return new Result<MethodModel>(model, new EquatableArray<DiagnosticInfo>([new DiagnosticInfo(Diagnostics.MethodNotRegistered, location, symbol.Name)]));
+        }
+
+        return Results.Success(model);
+    }
+
+    private static DiagnosticInfo? ValidateDefinition(IMethodSymbol symbol, Location location)
+    {
+        if (!symbol.IsStatic || !symbol.IsPartialDefinition || (symbol.PartialImplementationPart is not null))
+        {
+            return new DiagnosticInfo(Diagnostics.InvalidMethodDefinition, location, symbol.Name);
+        }
+
         if (symbol.Parameters.Length != 0)
         {
-            return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidMethodParameter, syntax.GetLocation(), symbol.Name));
+            return new DiagnosticInfo(Diagnostics.InvalidMethodParameter, location, symbol.Name);
         }
 
-        // Validate return type
         if (!symbol.ReturnsVoid)
         {
-            return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidMethodReturnType, syntax.GetLocation(), symbol.Name));
+            return new DiagnosticInfo(Diagnostics.InvalidMethodReturnType, location, symbol.Name);
         }
 
-        // Validate containing type
+        return null;
+    }
+
+    private static List<ContainingTypeModel> GetContainingTypes(MethodDeclarationSyntax syntax, out DiagnosticInfo? error)
+    {
         var types = new List<ContainingTypeModel>();
         foreach (var typeSyntax in syntax.Ancestors().OfType<TypeDeclarationSyntax>())
         {
@@ -107,57 +152,32 @@ public sealed class TemplateGenerator : IIncrementalGenerator
                 !typeSyntax.Modifiers.Any(SyntaxKind.PartialKeyword) ||
                 typeSyntax.Modifiers.Any(SyntaxKind.FileKeyword))
             {
-                return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidContainingType, typeSyntax.Identifier.GetLocation(), typeSyntax.Identifier.Text));
+                error = new DiagnosticInfo(Diagnostics.InvalidContainingType, typeSyntax.Identifier.GetLocation(), typeSyntax.Identifier.Text);
+                return types;
             }
 
-            types.Insert(0, new ContainingTypeModel(keyword, GetTypeName(typeSyntax), GetHintName(typeSyntax)));
+            types.Insert(0, new ContainingTypeModel(keyword, GetTypeName(typeSyntax)));
         }
 
-        // Validate attribute argument
-        var attribute = context.Attributes[0];
-        var message = attribute.ConstructorArguments.Length > 0 ? attribute.ConstructorArguments[0].Value as string : null;
-        if ((message is not null) && String.IsNullOrWhiteSpace(message))
+        error = null;
+        return types;
+    }
+
+    private static DiagnosticInfo? ReadAttribute(AttributeData attribute, string methodName, Location location, out string? message, out MethodOutput output)
+    {
+        output = MethodOutput.Console;
+        if (attribute.TryGetConstructorArgument(0, out message) && String.IsNullOrWhiteSpace(message))
         {
-            return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidAttributeArgument, GetArgumentLocation(attribute, null) ?? syntax.GetLocation(), "message", symbol.Name));
+            return new DiagnosticInfo(Diagnostics.InvalidAttributeArgument, GetArgumentLocation(attribute, null) ?? location, "message", methodName);
         }
 
-        var output = MethodOutput.Console;
-        foreach (var argument in attribute.NamedArguments)
+        if (attribute.TryGetNamedArgument(OutputPropertyName, out var value) &&
+            (!value.TryGetValue(out output) || !Enum.IsDefined(typeof(MethodOutput), output)))
         {
-            if (argument.Key != OutputPropertyName)
-            {
-                continue;
-            }
-
-            if ((argument.Value.Value is not int value) || !Enum.IsDefined(typeof(MethodOutput), value))
-            {
-                return Results.Error<MethodModel>(new DiagnosticInfo(Diagnostics.InvalidAttributeArgument, GetArgumentLocation(attribute, OutputPropertyName) ?? syntax.GetLocation(), OutputPropertyName, symbol.Name));
-            }
-
-            output = (MethodOutput)value;
+            return new DiagnosticInfo(Diagnostics.InvalidAttributeArgument, GetArgumentLocation(attribute, OutputPropertyName) ?? location, OutputPropertyName, methodName);
         }
 
-        var containingType = symbol.ContainingType;
-        var ns = String.IsNullOrEmpty(containingType.ContainingNamespace.Name)
-            ? string.Empty
-            : containingType.ContainingNamespace.ToDisplayString();
-
-        var model = new MethodModel(
-            ns,
-            new EquatableArray<ContainingTypeModel>(types),
-            GetAccessibilityModifiers(syntax),
-            symbol.Name,
-            IsRegistrable(symbol),
-            message,
-            output);
-
-        // Validate registration
-        if (!model.IsRegistrable)
-        {
-            return new Result<MethodModel>(model, new EquatableArray<DiagnosticInfo>([new DiagnosticInfo(Diagnostics.MethodNotRegistered, syntax.GetLocation(), symbol.Name)]));
-        }
-
-        return Results.Success(model);
+        return null;
     }
 
     private static Location? GetArgumentLocation(AttributeData attribute, string? name)
@@ -188,26 +208,16 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             ? $"{syntax.Identifier.Text}<{String.Join(", ", list.Parameters.Select(static x => x.VarianceKeyword.IsKind(SyntaxKind.None) ? x.Identifier.Text : $"{x.VarianceKeyword.Text} {x.Identifier.Text}"))}>"
             : syntax.Identifier.Text;
 
-    private static string GetHintName(TypeDeclarationSyntax syntax) =>
-        syntax.TypeParameterList is { Parameters.Count: > 0 } list
-            ? $"{syntax.Identifier.ValueText}[{String.Join(",", list.Parameters.Select(static x => x.Identifier.ValueText))}]"
-            : syntax.Identifier.ValueText;
-
-    private static string GetAccessibilityModifiers(MethodDeclarationSyntax syntax) =>
-        String.Join(" ", syntax.Modifiers
-            .Where(static x => x.Kind() is SyntaxKind.PublicKeyword or SyntaxKind.InternalKeyword or SyntaxKind.ProtectedKeyword or SyntaxKind.PrivateKeyword)
-            .Select(static x => x.Text));
-
     private static bool IsRegistrable(IMethodSymbol symbol)
     {
-        if (!IsAssemblyAccessible(symbol.DeclaredAccessibility))
+        if (!IsAssemblyAccessible(symbol.DeclaredAccessibility) || symbol.IsGenericMethod || symbol.IsVirtual || IsObsoleteError(symbol))
         {
             return false;
         }
 
         for (var type = symbol.ContainingType; type is not null; type = type.ContainingType)
         {
-            if (!IsAssemblyAccessible(type.DeclaredAccessibility) || (type.Arity > 0))
+            if (!IsAssemblyAccessible(type.DeclaredAccessibility) || (type.Arity > 0) || IsObsoleteError(type))
             {
                 return false;
             }
@@ -216,28 +226,65 @@ public sealed class TemplateGenerator : IIncrementalGenerator
         return true;
     }
 
+    private static bool IsObsoleteError(ISymbol symbol) =>
+        symbol.IsObsolete(out var isError) && isError;
+
     private static bool IsAssemblyAccessible(Accessibility accessibility) =>
         accessibility is Accessibility.Public or Accessibility.Internal or Accessibility.ProtectedOrInternal;
+
+    private static string GetRegistryName(IMethodSymbol symbol) =>
+        $"{symbol.ContainingType.ToDisplayString(RegistryNameFormat)}.{symbol.Name}";
+
+    private static string GetMethodReference(IMethodSymbol symbol) =>
+        $"{symbol.ContainingType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}.{CSharpIdentifier.Escape(symbol.Name)}";
 
     // ------------------------------------------------------------
     // Generator
     // ------------------------------------------------------------
 
-    private static ImmutableArray<TypeModel> SelectTypes(ImmutableArray<Result<MethodModel>> methods) =>
-        methods.SelectValue()
-            .GroupBy(static x => new { x.Namespace, x.Types })
+    private static IEnumerable<DiagnosticInfo> SelectDiagnostics(ImmutableArray<Result<MethodModel>> methods) =>
+        methods.SelectError()
+            .Concat(FindHintNameCollisions(methods).Select(static x => new DiagnosticInfo(Diagnostics.HintNameCollision, (Location?)null, x.Name, x.Other)))
+            .Distinct();
+
+    private static List<(string HintName, string Name, string Other)> FindHintNameCollisions(ImmutableArray<Result<MethodModel>> methods)
+    {
+        var collisions = new List<(string HintName, string Name, string Other)>();
+        var firsts = new Dictionary<string, MethodModel>(StringComparer.OrdinalIgnoreCase);
+        var reported = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var method in methods.SelectValue().OrderBy(static x => x.HintName, StringComparer.Ordinal))
+        {
+            if (!firsts.TryGetValue(method.HintName, out var first))
+            {
+                firsts.Add(method.HintName, method);
+            }
+            else if ((first.HintName != method.HintName) && reported.Add(method.HintName))
+            {
+                collisions.Add((method.HintName, GetTypeName(method), GetTypeName(first)));
+            }
+        }
+
+        return collisions;
+    }
+
+    private static string GetTypeName(MethodModel method)
+    {
+        var name = String.Join(".", method.Types.Select(static x => x.Name));
+        return String.IsNullOrEmpty(method.Namespace) ? name : $"{method.Namespace}.{name}";
+    }
+
+    private static ImmutableArray<TypeModel> SelectTypes(ImmutableArray<Result<MethodModel>> methods)
+    {
+        var collisions = new HashSet<string>(FindHintNameCollisions(methods).Select(static x => x.HintName), StringComparer.Ordinal);
+        return methods.SelectValue()
+            .Where(x => !collisions.Contains(x.HintName))
+            .GroupBy(static x => new { x.Namespace, x.Types, x.HintName })
             .Select(static g => new TypeModel(
                 g.Key.Namespace,
                 g.Key.Types,
+                g.Key.HintName,
                 new EquatableArray<MethodModel>(g)))
             .ToImmutableArray();
-
-    private static void ReportDiagnostics(SourceProductionContext context, ImmutableArray<Result<MethodModel>> methods)
-    {
-        foreach (var info in methods.SelectError())
-        {
-            context.ReportDiagnostic(info);
-        }
     }
 
     private static void Execute(SourceProductionContext context, OptionModel option, TypeModel type)
@@ -245,7 +292,7 @@ public sealed class TemplateGenerator : IIncrementalGenerator
         var builder = new SourceBuilder();
         BuildSource(builder, option, type);
 
-        context.AddSource(MakeFilename(type.Namespace, type.Types), builder);
+        context.AddSource(type.HintName, builder);
     }
 
     private static void BuildSource(SourceBuilder builder, OptionModel option, TypeModel type)
@@ -289,29 +336,30 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             }
 
             // method
-            builder.Indent();
-            if (!String.IsNullOrEmpty(method.AccessibilityModifiers))
-            {
-                builder
-                    .Append(method.AccessibilityModifiers)
-                    .Append(" ");
-            }
-
             builder
-                .Append("static partial void ")
-                .Append(method.MethodName)
-                .Append("()")
+                .Indent()
+                .Append(method.Signature)
                 .NewLine();
             builder.BeginScope();
 
-            var message = method.Message ?? (String.IsNullOrEmpty(option.Value) ? DefaultMessage : option.Value);
-            builder
-                .Indent()
-                .Append(GetWriteLine(method.Output))
-                .Append("(")
-                .Append(SymbolDisplay.FormatLiteral(message, true))
-                .Append(");")
-                .NewLine();
+            if (method.IsFallback)
+            {
+                builder
+                    .Indent()
+                    .Append("throw new global::System.InvalidOperationException();")
+                    .NewLine();
+            }
+            else
+            {
+                var message = method.Message ?? (String.IsNullOrEmpty(option.Value) ? DefaultMessage : option.Value);
+                builder
+                    .Indent()
+                    .Append(GetWriteLine(method.Output))
+                    .Append("(")
+                    .Append(CSharpLiteral.Format(message))
+                    .Append(");")
+                    .NewLine();
+            }
 
             builder.EndScope();
         }
@@ -328,11 +376,8 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
     private static RegistryModel SelectRegistry(ImmutableArray<Result<MethodModel>> methods) =>
         new(new EquatableArray<RegistryMethodModel>(methods.SelectValue()
-            .Where(static x => x.IsRegistrable)
-            .Select(static x => new RegistryMethodModel(
-                x.Namespace,
-                String.Join(".", x.Types.Select(static y => y.Name)),
-                x.MethodName))));
+            .Select(static x => x.Registration)
+            .OfType<RegistryMethodModel>()));
 
     private static void ExecuteRegistry(SourceProductionContext context, RegistryModel registry)
     {
@@ -351,12 +396,13 @@ public sealed class TemplateGenerator : IIncrementalGenerator
     {
         builder.AutoGenerated();
         builder.EnableNullable();
+        builder.Disable("CS0612, CS0618");
         builder.NewLine();
 
         // type
         builder
             .Indent()
-            .Append("internal static class CustomMethodInitializer")
+            .Append("file static class CustomMethodInitializer")
             .NewLine();
         builder.BeginScope();
 
@@ -373,13 +419,12 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
         foreach (var method in registry.Methods)
         {
-            var name = MakeMethodName(method);
             builder
                 .Indent()
                 .Append("global::Template.Library.Internal.CustomMethodRegistry.RegisterMethod(")
-                .Append(SymbolDisplay.FormatLiteral(name, true))
-                .Append(", global::")
-                .Append(name)
+                .Append(CSharpLiteral.Format(method.Name))
+                .Append(", ")
+                .Append(method.Reference)
                 .Append(");")
                 .NewLine();
         }
@@ -399,25 +444,4 @@ public sealed class TemplateGenerator : IIncrementalGenerator
             MethodOutput.Trace => "global::System.Diagnostics.Trace.WriteLine",
             _ => "global::System.Console.WriteLine"
         };
-
-    private static string MakeMethodName(RegistryMethodModel method) =>
-        String.IsNullOrEmpty(method.Namespace)
-            ? $"{method.TypeName}.{method.MethodName}"
-            : $"{method.Namespace}.{method.TypeName}.{method.MethodName}";
-
-    private static string MakeFilename(string ns, EquatableArray<ContainingTypeModel> types)
-    {
-        var buffer = new StringBuilder();
-
-        if (!String.IsNullOrEmpty(ns))
-        {
-            buffer.Append(ns.Replace("@", String.Empty).Replace('.', '_'));
-            buffer.Append('_');
-        }
-
-        buffer.Append(String.Join(".", types.Select(static x => x.HintName)));
-        buffer.Append(".g.cs");
-
-        return buffer.ToString();
-    }
 }

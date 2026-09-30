@@ -70,6 +70,19 @@ public sealed class PipelineCacheTests
     }
 
     [Fact]
+    public void UnrelatedEditOfTargetFileKeepsModelUnchanged()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunIncrementalEdit(Source, Source + "\ninternal sealed class Unrelated;");
+
+        // Assert
+        Assert.Equal(result.FirstGeneratedText, result.SecondGeneratedText);
+        Assert.NotEmpty(result.StepReasons("Methods"));
+        Assert.DoesNotContain(result.StepReasons("Methods"), static x => x.IsChanged());
+        Assert.DoesNotContain(result.StepReasons("Types"), static x => x.IsChanged());
+    }
+
+    [Fact]
     public void NestedTypeUnrelatedEditKeepsModelCached()
     {
         // Arrange & Act
