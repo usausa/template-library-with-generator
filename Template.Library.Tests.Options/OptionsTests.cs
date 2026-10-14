@@ -24,7 +24,7 @@ public sealed class OptionsTests
         var output = CaptureConsole(OptionsTarget.DefaultMessage);
 
         // Assert
-        Assert.Equal($"Hello from options project.{Environment.NewLine}", output);
+        Assert.Equal($"Hello; C# options #2 100%{Environment.NewLine}", output);
     }
 
     [Fact]

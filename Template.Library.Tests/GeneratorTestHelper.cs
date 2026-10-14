@@ -34,7 +34,7 @@ internal static class GeneratorTestHelper
     public static IReadOnlyDictionary<string, string> GetGeneratedSources(string source) => Runner.Run(source).GeneratedSources;
 
     public static string GetGeneratedSource(string source, string optionValue) => Runner
-        .WithGlobalOption("build_property.TemplateLibraryGeneratorValue", optionValue)
+        .WithGlobalOption("build_property._TemplateLibraryGeneratorValue", optionValue)
         .GetGeneratedSource(source);
 
     public static IncrementalRunResult RunIncremental(string source, string addedSource) =>

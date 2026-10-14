@@ -18,7 +18,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TemplateLibraryGeneratorValue>Hello from options project.</TemplateLibraryGeneratorValue>
+    <TemplateLibraryGeneratorValue>Hello; C# options #2 100%</TemplateLibraryGeneratorValue>
   </PropertyGroup>
 
   <Import Project="..\Template.Library.targets" />

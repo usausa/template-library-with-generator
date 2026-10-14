@@ -528,6 +528,16 @@ public sealed class GeneratorTests
     }
 
     [Fact]
+    public void EscapedBuildPropertyIsUnescaped()
+    {
+        // Arrange & Act
+        var generated = GeneratorTestHelper.GetGeneratedSource(Source, "Hello%3B C%23 world 100%25%0D%0A");
+
+        // Assert
+        Assert.Contains("global::System.Console.WriteLine(\"Hello; C# world 100%\\r\\n\");", generated, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void MessageArgumentOverridesBuildProperty()
     {
         // Arrange

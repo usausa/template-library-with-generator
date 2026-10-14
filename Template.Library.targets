@@ -1,7 +1,14 @@
 <Project>
 
   <ItemGroup>
-    <CompilerVisibleProperty Include="TemplateLibraryGeneratorValue" />
+    <CompilerVisibleProperty Include="_TemplateLibraryGeneratorValue" />
   </ItemGroup>
+
+  <Target Name="ComputeTemplateLibraryGeneratorValue"
+          BeforeTargets="GenerateMSBuildEditorConfigFileShouldRun">
+    <PropertyGroup Condition="'$(TemplateLibraryGeneratorValue)' != ''">
+      <_TemplateLibraryGeneratorValue>$(TemplateLibraryGeneratorValue.Replace('%', '%2525').Replace('#', '%2523').Replace(';', '%253B').Replace('%0D', '%250D').Replace('%0A', '%250A'))</_TemplateLibraryGeneratorValue>
+    </PropertyGroup>
+  </Target>
 
 </Project>

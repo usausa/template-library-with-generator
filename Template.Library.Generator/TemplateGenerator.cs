@@ -72,8 +72,8 @@ public sealed class TemplateGenerator : IIncrementalGenerator
 
     private static OptionModel SelectOption(AnalyzerConfigOptionsProvider provider, CancellationToken token)
     {
-        var value = provider.GlobalOptions.GetValue<string>("TemplateLibraryGeneratorValue");
-        return new OptionModel(value);
+        var value = provider.GlobalOptions.GetValue<string>("_TemplateLibraryGeneratorValue");
+        return new OptionModel(String.IsNullOrEmpty(value) ? value : Uri.UnescapeDataString(value));
     }
 
     private static bool IsMethodSyntax(SyntaxNode syntax) =>
