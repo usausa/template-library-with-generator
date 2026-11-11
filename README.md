@@ -1,6 +1,6 @@
-# template-library-with-generator
+# Template project for library with source generator
 
-Template for a NuGet library with a source generator.
+[Template](https://usausa.github.io/template/) project for library with source generator.
 
 ## Generators based on this template
 
