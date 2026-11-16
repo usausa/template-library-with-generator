@@ -75,4 +75,4 @@ CustomMethodProvider.FindMethod("Example.Target.MessageMethod")?.Invoke();
 
 ## Requirements
 
-- C# compiler of Roslyn 5.9 or later. Older compilers do not load the generator (CS9057).
+- C# compiler of Roslyn 5.12 or later (.NET SDK 11.0.100 or later). Older compilers do not load the generator (CS9057).
